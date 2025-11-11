@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2
+      author: sergei
+      changes:
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_ADMIN"
+        - insert:
+            tableName: roles
+            columns:
+              - column:
+                  name: name
+                  value: "ROLE_USER"
+        # Создаем админа
+        - insert:
+            tableName: users
+            columns:
+              - column:
+                  name: username
+                  value: "admin"
+              - column:
+                  # Пароль: "admin" (BCrypt)
+                  name: password
+                  value: "$2a$10$f/9.jgojN7tNFG/8JCzQDeDII.J9lAEi6GJc.9.dlyV62p1w.J/qG"
+              - column:
+                  name: email
+                  value: "admin@example.com"
+              - column:
+                  name: first_name
+                  value: "Admin"
+              - column:
+                  name: last_name
+                  value: "User"
+              - column:
+                  name: enabled
+                  value: true
+              - column:
+                  name: created_at
+                  value: "2024-01-01 00:00:00"
+              - column:
+                  name: updated_at
+                  value: "2024-01-01 00:00:00"
+        # Назначаем админу роль ADMIN
+        - insert:
+            tableName: user_roles
+            columns:
+              - column:
+                  name: user_id
+                  # ID = 1 (т.к. это первая запись в users)
+                  value: 1
+              - column:
+                  name: role_id
+                  # ID = 1 (т.к. ROLE_ADMIN - первая запись в roles)
+                  value: 1

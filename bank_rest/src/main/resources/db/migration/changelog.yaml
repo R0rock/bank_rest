@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - include:
+      file: db/migration/001-initial-schema.yaml
+  - include:
+      file: db/migration/002-initial-data.yaml
