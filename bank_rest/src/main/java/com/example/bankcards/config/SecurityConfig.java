@@ -19,18 +19,46 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+/**
+ * Конфигурация безопасности Spring Security для REST API.
+ * <p>
+ * Основные функции:
+ * <ul>
+ *     <li>Настройка фильтра JWT-аутентификации.</li>
+ *     <li>Отключение состояния сессии (статлес режим).</li>
+ *     <li>Настройка CORS и CSRF.</li>
+ *     <li>Разрешение публичных эндпоинтов для авторизации, Swagger и Actuator.</li>
+ * </ul>
+ * <p>
+ * Используется {@link UserDetailsServiceImpl} для загрузки пользователей
+ * и {@link AuthTokenFilter} для проверки JWT-токенов в каждом запросе.
+ */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    /**
+     * Сервис для загрузки пользовательских данных из источника (например, базы данных).
+     */
     @Autowired
-    UserDetailsServiceImpl userDetailsService;
+    private UserDetailsServiceImpl userDetailsService;
 
+    /**
+     * Создаёт и настраивает фильтр для обработки JWT-токенов в запросах.
+     *
+     * @return экземпляр {@link AuthTokenFilter}.
+     */
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
     }
 
+    /**
+     * Настраивает провайдер аутентификации, использующий {@link UserDetailsServiceImpl}
+     * и {@link BCryptPasswordEncoder} для проверки паролей.
+     *
+     * @return экземпляр {@link DaoAuthenticationProvider}.
+     */
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -39,16 +67,46 @@ public class SecurityConfig {
         return authProvider;
     }
 
+    /**
+     * Предоставляет менеджер аутентификации, который используется при авторизации пользователей.
+     *
+     * @param authConfig конфигурация аутентификации Spring Security.
+     * @return экземпляр {@link AuthenticationManager}.
+     * @throws Exception если не удаётся создать {@link AuthenticationManager}.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+    /**
+     * Кодировщик паролей, основанный на алгоритме BCrypt.
+     * Используется для хэширования и проверки паролей пользователей.
+     *
+     * @return экземпляр {@link BCryptPasswordEncoder}.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Основная конфигурация фильтров безопасности и политики доступа.
+     * <p>
+     * - Отключает CSRF и включает CORS.<br>
+     * - Переводит приложение в статлес режим (без хранения сессий).<br>
+     * - Разрешает доступ без авторизации к эндпоинтам:
+     *   <ul>
+     *       <li>/api/auth/** — эндпоинты для аутентификации и регистрации;</li>
+     *       <li>/swagger-ui/**, /v3/api-docs/**, /api-docs/** — Swagger-документация;</li>
+     *       <li>/actuator/** — метрики и health-check для Docker.</li>
+     *   </ul>
+     * - Все остальные запросы требуют авторизации.
+     *
+     * @param http объект {@link HttpSecurity} для конфигурации фильтров и правил доступа.
+     * @return экземпляр {@link SecurityFilterChain}, определяющий правила безопасности.
+     * @throws Exception если при настройке возникает ошибка.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors().and().csrf().disable()
@@ -65,6 +123,14 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Настройка CORS-фильтра, разрешающего запросы со всех источников.
+     * <p>
+     * Позволяет всем доменам, заголовкам и методам обращаться к API.
+     * Используется при взаимодействии с фронтендом, размещённым на другом домене.
+     *
+     * @return экземпляр {@link CorsFilter}, применяемый ко всем эндпоинтам.
+     */
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
