@@ -1,3 +1,11 @@
+# Liquibase master changelog
+#
+# Этот файл является основным changelog для управления схемой и начальными данными базы данных.
+# Он включает в себя все отдельные changeset файлы в правильном порядке:
+# 1. db/migration/001-initial-schema.yaml — создание таблиц и структуры базы данных
+# 2. db/migration/002-initial-data.yaml — вставка начальных данных, включая роли и администратора
+#
+# Использование include позволяет разделять изменения по отдельным файлам для лучшей читаемости и поддержки.
 databaseChangeLog:
   - include:
       file: db/migration/001-initial-schema.yaml

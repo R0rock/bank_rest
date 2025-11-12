@@ -1,8 +1,19 @@
+# Liquibase changeset для создания таблиц базы данных
+#
+# Данный файл описывает структуру базы данных для приложения Bank Cards Management System.
+# Используется Liquibase для управления версиями схемы БД.
+#
+# Таблицы, создаваемые этим changeset:
+# 1. roles — таблица ролей пользователей (ROLE_USER, ROLE_ADMIN)
+# 2. users — таблица пользователей системы с основными полями и статусом enabled
+# 3. user_roles — связь многие-ко-многим между пользователями и ролями
+# 4. cards — таблица банковских карт с зашифрованным и маскированным номером, балансом и статусом
 databaseChangeLog:
   - changeSet:
       id: 1
       author: sergei
       changes:
+        # Создание таблицы roles
         - createTable:
             tableName: roles
             columns:
@@ -19,6 +30,8 @@ databaseChangeLog:
                   constraints:
                     unique: true
                     nullable: false
+
+        # Создание таблицы users
         - createTable:
             tableName: users
             columns:
@@ -66,6 +79,8 @@ databaseChangeLog:
               - column:
                   name: updated_at
                   type: TIMESTAMP
+
+        # Создание таблицы связи user_roles
         - createTable:
             tableName: user_roles
             columns:
@@ -83,6 +98,8 @@ databaseChangeLog:
                     nullable: false
                     foreignKeyName: fk_user_roles_role
                     references: roles(id)
+
+        # Создание таблицы cards
         - createTable:
             tableName: cards
             columns:
@@ -134,4 +151,4 @@ databaseChangeLog:
                   type: TIMESTAMP
               - column:
                   name: updated_at
-                  type: TIMESTAMP
+                  type: TIMESTAMP TIMESTAMP

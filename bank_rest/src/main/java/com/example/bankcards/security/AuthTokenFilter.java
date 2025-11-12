@@ -15,15 +15,37 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * Фильтр аутентификации JWT, выполняющий проверку токена для каждого HTTP-запроса.
+ * <p>
+ * Расширяет {@link OncePerRequestFilter}, чтобы обрабатывать каждый запрос один раз.
+ * Проверяет наличие и валидность JWT-токена, извлекает пользователя и устанавливает
+ * {@link SecurityContextHolder} для дальнейшей авторизации.
+ */
 public class AuthTokenFilter extends OncePerRequestFilter {
+
     @Autowired
     private JwtUtils jwtUtils;
+
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
+
     private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
+    /**
+     * Основной метод фильтра, который проверяет наличие JWT в заголовке Authorization,
+     * валидирует его, загружает пользователя и устанавливает его в контекст безопасности.
+     *
+     * @param request     HTTP-запрос
+     * @param response    HTTP-ответ
+     * @param filterChain цепочка фильтров
+     * @throws ServletException если ошибка фильтрации запроса
+     * @throws IOException      если ошибка ввода-вывода
+     */
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
@@ -31,9 +53,11 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userDetails,
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
                                 null,
-                                userDetails.getAuthorities());
+                                userDetails.getAuthorities()
+                        );
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
@@ -43,6 +67,14 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    /**
+     * Извлекает JWT-токен из заголовка Authorization HTTP-запроса.
+     * <p>
+     * Ожидается формат заголовка: "Authorization: Bearer <token>".
+     *
+     * @param request HTTP-запрос
+     * @return JWT-токен, если он присутствует и корректный, иначе {@code null}
+     */
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {

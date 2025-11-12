@@ -7,6 +7,49 @@
 #  - Настроить параметры безопасности и JWT.
 #  - Включить Swagger UI.
 
+# ******************************************************
+
+# Конфигурационный файл Spring Boot (application.yaml)
+#
+# Описание основных настроек приложения Bank Cards Management System.
+#
+# Разделы:
+# 1. server — настройки сервера Spring Boot
+#    - port: порт, на котором запускается приложение (8080)
+#
+# 2. spring.application — имя приложения для Spring Context
+#    - name: bank-cards
+#
+# 3. spring.datasource — настройки подключения к базе данных PostgreSQL
+#    - url: JDBC URL базы данных
+#    - username / password: учетные данные
+#    - driver-class-name: драйвер для PostgreSQL
+#
+# 4. spring.jpa — настройки JPA/Hibernate
+#    - hibernate.ddl-auto: validate (проверка схемы при старте)
+#    - properties.hibernate.dialect: PostgreSQL диалект
+#    - properties.hibernate.format_sql: форматирование SQL в логах
+#    - show-sql: вывод SQL-запросов в консоль
+#
+# 5. spring.liquibase — настройки Liquibase
+#    - change-log: путь к основному changelog файлу
+#    - enabled: включение Liquibase
+#
+# 6. jwt — настройки JWT для аутентификации
+#    - secret: секретный ключ для генерации токенов
+#    - expiration: время жизни токена в миллисекундах (24 часа)
+#
+# 7. encryption — настройки для шифрования данных
+#    - secret: ключ для AES шифрования, используемый в приложении
+#
+# 8. logging — уровни логирования
+#    - com.example.bankcards: DEBUG (детальная отладка приложения)
+#    - org.springframework.security: DEBUG (детальная отладка безопасности)
+#
+# 9. springdoc — настройки документации OpenAPI/Swagger
+#    - api-docs.path: путь к генерации JSON OpenAPI спецификации
+#    - swagger-ui.path: путь к Swagger UI
+#    - operations-sorter: порядок отображения операций (по методу)
 server:
   port: 8080
 

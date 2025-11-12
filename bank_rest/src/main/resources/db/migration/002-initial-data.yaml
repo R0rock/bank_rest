@@ -1,21 +1,35 @@
+# Liquibase changeset для начальных данных базы данных
+#
+# Этот changeset выполняет начальную инициализацию:
+# 1. Добавляет стандартные роли ROLE_ADMIN и ROLE_USER в таблицу roles
+# 2. Создает пользователя admin с заранее зашифрованным паролем
+# 3. Назначает пользователю admin роль ROLE_ADMIN
+#
+# Примечания:
+# - Пароль администратора хранится в зашифрованном виде BCrypt.
+# - Дата создания и обновления фиксирована для контроля версий.
 databaseChangeLog:
   - changeSet:
       id: 2
       author: sergei
       changes:
+        # Вставка роли администратора
         - insert:
             tableName: roles
             columns:
               - column:
                   name: name
                   value: "ROLE_ADMIN"
+
+        # Вставка роли пользователя
         - insert:
             tableName: roles
             columns:
               - column:
                   name: name
                   value: "ROLE_USER"
-        # Создаем админа
+
+        # Создание администратора
         - insert:
             tableName: users
             columns:
@@ -44,15 +58,16 @@ databaseChangeLog:
               - column:
                   name: updated_at
                   value: "2024-01-01 00:00:00"
-        # Назначаем админу роль ADMIN
+
+        # Назначение роли ADMIN пользователю admin
         - insert:
             tableName: user_roles
             columns:
               - column:
                   name: user_id
-                  # ID = 1 (т.к. это первая запись в users)
+                  # ID = 1, первая запись в таблице users
                   value: 1
               - column:
                   name: role_id
-                  # ID = 1 (т.к. ROLE_ADMIN - первая запись в roles)
+                  # ID = 1, первая запись в таблице roles (ROLE_ADMIN)
                   value: 1
