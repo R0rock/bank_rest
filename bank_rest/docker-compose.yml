@@ -10,50 +10,71 @@
 
 version: '3.8'
 
+# =========================================================
+#  Docker Compose configuration for Bank Cards Application
+# ---------------------------------------------------------
+# This configuration defines two services:
+#    PostgreSQL Database
+#    Spring Boot Application
+# The app connects to PostgreSQL using an internal Docker network.
+# =========================================================
+
 services:
+  # -------------------------------------------------------
+  #  PostgreSQL Database Service
+  # -------------------------------------------------------
   postgres:
-    image: postgres:15
+    image: postgres:15                 # Official PostgreSQL image, version 15
     container_name: bank_cards_postgres
     environment:
-      POSTGRES_DB: bank_cards_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bank_cards_db       # Database name
+      POSTGRES_USER: postgres          # Default user
+      POSTGRES_PASSWORD: postgres      # Password for the user
     ports:
-      - "5432:5432"
+      - "5432:5432"                    # Expose DB port to the host machine
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data  # Persistent storage for DB data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]  # Checks DB readiness
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
-      - bank_cards_network
+      - bank_cards_network             # Attach to the internal app network
 
+  # -------------------------------------------------------
+  #  Spring Boot Application Service
+  # -------------------------------------------------------
   app:
-    build: .
+    build: .                           # Build image from local Dockerfile
     container_name: bank_cards_app
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bank_cards_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker   # Activate Docker-specific profile
     ports:
-      - "8080:8080"
+      - "8080:8080"                    # Expose app on localhost:8080
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy     # Wait until PostgreSQL is ready
     networks:
       - bank_cards_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"] # App health endpoint
       interval: 30s
       timeout: 10s
       retries: 3
 
+# -------------------------------------------------------
+#  Volume configuration
+# -------------------------------------------------------
 volumes:
-  postgres_data:
+  postgres_data:                       # Named volume for PostgreSQL persistence
 
+# -------------------------------------------------------
+#  Network configuration
+# -------------------------------------------------------
 networks:
   bank_cards_network:
-    driver: bridge
+    driver: bridge                     # Bridge network for inter-container communication
