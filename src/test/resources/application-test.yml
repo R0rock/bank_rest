@@ -1,0 +1,22 @@
+# Конфигурация для профиля 'test'
+# Эта конфигурация будет использоваться, когда тесты запускаются с @ActiveProfiles("test")
+spring:
+  # Используем H2 In-Memory базу данных
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driverClassName: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: validate # Liquibase будет управлять схемой
+    show-sql: true
+
+  # Указываем Liquibase использовать тот же changelog, что и в main
+  liquibase:
+    change-log: classpath:db/migration/changelog.yaml
+    enabled: true
+
+# Шифрование должно использовать тот же ключ, что и в main
+encryption:
+  secret: ThisIsASecretKeyForBankCards2024

@@ -25,22 +25,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Тестовый класс для проверки работы {@link com.example.bankcards.controller.TransferController}.
- *
- * <p>Использует {@link MockMvc} для эмуляции HTTP-запросов к REST API, связанных
- * с переводами между картами одного пользователя.</p>
- *
- * <p>Основные сценарии тестирования:
+ * Тесты контроллера переводов {@link com.example.bankcards.controller.TransferController}.
+ * Проверяются:
  * <ul>
- *     <li>Успешный перевод между своими картами</li>
- *     <li>Попытка перевода с недостаточным балансом</li>
+ *     <li>Успешный перевод между собственными картами пользователя</li>
+ *     <li>Ошибка при недостаточном балансе</li>
  * </ul>
- * </p>
- *
- * <p>Тесты выполняются в транзакции, которая автоматически откатывается после каждого теста
- * благодаря аннотации {@link Transactional}.</p>
- *
- * <p>Активируется профиль {@code test}, что позволяет использовать тестовую БД и отдельные настройки.</p>
+ * Тесты выполняются через MockMvc, включая реальную аутентификацию и создание карт.
+ */
+
+/**
+ * Интеграционные тесты TransferController.
+ * Тестируется полный цикл:
+ * <ol>
+ *     <li>Регистрация пользователя</li>
+ *     <li>Авторизация и получение JWT</li>
+ *     <li>Создание двух карт пользователя</li>
+ *     <li>Выполнение перевода</li>
+ *     <li>Проверка обработки ошибок</li>
+ * </ol>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -48,38 +51,39 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class TransferControllerTest {
 
-    /** MockMvc для имитации HTTP-запросов к REST API без запуска реального сервера. */
     @Autowired
     private MockMvc mockMvc;
 
-    /** ObjectMapper используется для сериализации/десериализации JSON в тестах. */
     @Autowired
     private ObjectMapper objectMapper;
 
-    /** Сервис карт, используется для создания тестовых карт и проверки логики перевода. */
     @Autowired
     private CardService cardService;
 
-    /** JWT-токен авторизованного тестового пользователя. */
+    /** JWT токен тестового пользователя */
     private String userToken;
 
-    /** Карта-отправитель для тестового пользователя. */
+    /** Карта-источник средств */
     private Card fromCard;
 
-    /** Карта-получатель для тестового пользователя. */
+    /** Карта-получатель средств */
     private Card toCard;
 
     /**
-     * Инициализация перед каждым тестом.
-     * <p>
-     * Создается тестовый пользователь, выполняется регистрация и логин для получения JWT-токена.
-     * Также создаются две карты для перевода.
-     * </p>
+     * Подготовка окружения для каждого теста.
+     * Включает:
+     * <ul>
+     *     <li>Регистрацию пользователя</li>
+     *     <li>Авторизацию и получение JWT</li>
+     *     <li>Создание двух карт через CardService</li>
+     * </ul>
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * @throws Exception если MockMvc-запросы не проходят
      */
     @BeforeEach
     void setUp() throws Exception {
+
+        // Регистрация
         AuthRequest registerRequest = new AuthRequest();
         registerRequest.setUsername("transferuser");
         registerRequest.setPassword("password123");
@@ -88,6 +92,7 @@ public class TransferControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)));
 
+        // Авторизация
         MvcResult loginResult = mockMvc.perform(post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
@@ -95,17 +100,19 @@ public class TransferControllerTest {
                 .andReturn();
 
         String responseBody = loginResult.getResponse().getContentAsString();
-        userToken = "Bearer " + objectMapper.readTree(responseBody).path("data").path("token").asText();
+        userToken = "Bearer " + objectMapper.readTree(responseBody)
+                .path("data").path("token").asText();
 
+        // Создание карт
         CardRequest cardRequest1 = new CardRequest();
-        cardRequest1.setCardNumber("1111222233334444");
+        cardRequest1.setCardNumber("1234567812345670");
         cardRequest1.setCardHolderName("Transfer User");
         cardRequest1.setExpirationDate(LocalDate.now().plusYears(2));
         cardRequest1.setBalance(BigDecimal.valueOf(1000));
         fromCard = cardService.createCardForUser(cardRequest1, "transferuser");
 
         CardRequest cardRequest2 = new CardRequest();
-        cardRequest2.setCardNumber("5555666677778888");
+        cardRequest2.setCardNumber("1234567812345688");
         cardRequest2.setCardHolderName("Transfer User");
         cardRequest2.setExpirationDate(LocalDate.now().plusYears(3));
         cardRequest2.setBalance(BigDecimal.valueOf(500));
@@ -113,13 +120,14 @@ public class TransferControllerTest {
     }
 
     /**
-     * Тестирует успешный перевод между своими картами.
-     * <p>
-     * Отправляется POST-запрос на эндпоинт <b>/api/transfers</b> с JSON-данными перевода.
-     * Проверяется, что операция выполнена успешно и возвращается корректное сообщение.
-     * </p>
+     * Проверяет успешный перевод между картами одного пользователя.
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * Ожидания:
+     * <ul>
+     *     <li>HTTP 200</li>
+     *     <li>Поле success = true</li>
+     *     <li>Поле message = "Transfer completed successfully"</li>
+     * </ul>
      */
     @Test
     void testTransferBetweenOwnCards() throws Exception {
@@ -138,13 +146,15 @@ public class TransferControllerTest {
     }
 
     /**
-     * Тестирует попытку перевода с недостаточным балансом.
-     * <p>
-     * Отправляется POST-запрос на эндпоинт <b>/api/transfers</b> с суммой больше, чем баланс карты-отправителя.
-     * Проверяется, что возвращается статус 400 и сообщение об ошибке.
-     * </p>
+     * Проверяет ошибку при попытке перевести сумму,
+     * превышающую баланс карты-источника.
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * Ожидания:
+     * <ul>
+     *     <li>HTTP 400</li>
+     *     <li>Поле success = false</li>
+     *     <li>Поле message = "Insufficient funds"</li>
+     * </ul>
      */
     @Test
     void testTransferInsufficientFunds() throws Exception {

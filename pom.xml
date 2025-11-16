@@ -40,7 +40,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <!--  Глобальные свойства проекта -->
     <properties>
-        <java.version>23</java.version>
+        <java.version>21</java.version>
         <jwt.version>0.11.5</jwt.version>
         <liquibase.version>4.24.0</liquibase.version>
         <modelmapper.version>3.1.1</modelmapper.version>
@@ -127,6 +127,13 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--  Зависимость H2, необходимая для интеграционных тестов с профилем 'test' -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
 

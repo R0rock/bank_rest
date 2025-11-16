@@ -8,6 +8,8 @@
 # Использование include позволяет разделять изменения по отдельным файлам для лучшей читаемости и поддержки.
 databaseChangeLog:
   - include:
+#       file: 001-initial-schema.yaml
       file: db/migration/001-initial-schema.yaml
   - include:
+#       file: 002-initial-data.yaml
       file: db/migration/002-initial-data.yaml

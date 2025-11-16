@@ -69,6 +69,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
+
+  # ИСПРАВЛЕНИЕ: Добавляем 'classpath:'
   liquibase:
     change-log: classpath:db/migration/changelog.yaml
     enabled: true

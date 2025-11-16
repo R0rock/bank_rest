@@ -46,7 +46,7 @@ services:
   #  Spring Boot Application Service
   # -------------------------------------------------------
   app:
-    build: .                           # Build image from local Dockerfile
+    build: bank_rest                           # Build image from local Dockerfile
     container_name: bank_cards_app
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/bank_cards_db

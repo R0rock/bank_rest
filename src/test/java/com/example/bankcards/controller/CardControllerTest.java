@@ -16,7 +16,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -24,25 +23,26 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+/**
+ * Интеграционные тесты контроллера управления банковскими картами {@link com.example.bankcards.controller.CardController}.
+ *
+ * Проверяются основные операции:
+ * <ul>
+ *     <li>Создание новой карты для авторизованного пользователя</li>
+ *     <li>Получение списка карт пользователя</li>
+ *     <li>Доступ к списку карт без авторизации (ожидается отказ)</li>
+ * </ul>
+ *
+ * Тесты выполняются через MockMvc и включают реальную регистрацию, авторизацию и использование JWT.
+ */
 
 /**
- * Тестовый класс для проверки работы {@link com.example.bankcards.controller.CardController}.
- *
- * <p>Использует {@link MockMvc} для эмуляции HTTP-запросов к REST API, связанных
- * с созданием и получением банковских карт пользователя.</p>
- *
- * <p>Основные сценарии тестирования:
- * <ul>
- *     <li>Создание карты для пользователя</li>
+ * Тестовый класс, проверяющий работу CardController:
+ * <ol>
+ *     <li>Создание карты пользователю</li>
  *     <li>Получение списка карт пользователя</li>
- *     <li>Попытка доступа без авторизации</li>
- * </ul>
- * </p>
- *
- * <p>Тесты выполняются в транзакции, которая автоматически откатывается после каждого теста
- * благодаря аннотации {@link Transactional}.</p>
- *
- * <p>Активируется профиль {@code test}, что позволяет использовать тестовую БД и отдельные настройки.</p>
+ *     <li>Запрет доступа к картам без авторизации</li>
+ * </ol>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -50,36 +50,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class CardControllerTest {
 
-    /** MockMvc для имитации HTTP-запросов к REST API без запуска реального сервера. */
     @Autowired
     private MockMvc mockMvc;
 
-    /** ObjectMapper используется для сериализации/десериализации JSON в тестах. */
     @Autowired
     private ObjectMapper objectMapper;
 
-    /** Сервис карт, используется для взаимодействия с логикой создания карт. */
     @Autowired
     private CardService cardService;
 
-    /** Репозиторий пользователей, используется для работы с тестовыми пользователями. */
     @Autowired
     private UserRepository userRepository;
 
-    /** JWT-токен авторизованного тестового пользователя. */
+    /** JWT токен авторизованного пользователя */
     private String userToken;
 
-    /** Тестовый пользователь для выполнения операций с картами. */
+    /** Тестовый пользователь */
     private User testUser;
 
     /**
      * Инициализация перед каждым тестом.
-     * <p>
-     * Создается тестовый пользователь и выполняется авторизация, чтобы получить JWT-токен
-     * для использования в запросах, требующих аутентификации.
-     * </p>
+     * <ul>
+     *     <li>Создаёт тестового пользователя</li>
+     *     <li>Регистрирует его через REST API</li>
+     *     <li>Авторизует и получает JWT токен</li>
+     * </ul>
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * @throws Exception если запрос MockMvc завершился ошибкой
      */
     @BeforeEach
     void setUp() throws Exception {
@@ -90,6 +87,7 @@ public class CardControllerTest {
         testUser.setFirstName("Card");
         testUser.setLastName("User");
 
+        // Регистрация пользователя
         AuthRequest registerRequest = new AuthRequest();
         registerRequest.setUsername("carduser");
         registerRequest.setPassword("password123");
@@ -98,24 +96,30 @@ public class CardControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)));
 
+        // Авторизация
         MvcResult loginResult = mockMvc.perform(post("/api/auth/signin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk())
                 .andReturn();
 
+        // Получение JWT
         String responseBody = loginResult.getResponse().getContentAsString();
-        userToken = "Bearer " + objectMapper.readTree(responseBody).path("data").path("token").asText();
+        userToken = "Bearer " + objectMapper.readTree(responseBody)
+                .path("data").path("token").asText();
     }
 
     /**
-     * Тестирует создание карты для авторизованного пользователя.
-     * <p>
-     * Отправляется POST-запрос на эндпоинт <b>/api/cards</b> с JSON-данными карты.
-     * Проверяется, что карта создана успешно и маскированный номер возвращается корректно.
-     * </p>
+     * Проверяет создание карты для авторизованного пользователя.
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * Ожидания:
+     * <ul>
+     *     <li>HTTP 200</li>
+     *     <li>success = true</li>
+     *     <li>Маскированный номер карты корректно сформирован</li>
+     * </ul>
+     *
+     * @throws Exception если MockMvc вызывает ошибку
      */
     @Test
     void testCreateCardForUser() throws Exception {
@@ -135,18 +139,25 @@ public class CardControllerTest {
     }
 
     /**
-     * Тестирует получение списка карт пользователя.
-     * <p>
-     * Сначала создается карта, затем выполняется GET-запрос на <b>/api/cards</b>.
-     * Проверяется, что ответ содержит массив карт и маскированный номер карты корректен.
-     * </p>
+     * Проверяет получение списка карт пользователя.
+     * Тест вызывает сначала {@link #testCreateCardForUser()}, затем запрашивает список.
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * Ожидания:
+     * <ul>
+     *     <li>HTTP 200</li>
+     *     <li>success = true</li>
+     *     <li>Вернулся массив карт</li>
+     *     <li>Первая карта имеет корректно замаскированный номер</li>
+     * </ul>
+     *
+     * @throws Exception если запрос завершился ошибкой
      */
     @Test
     void testGetUserCards() throws Exception {
+        // Сначала создаем карту
         testCreateCardForUser();
 
+        // Затем получаем список
         mockMvc.perform(get("/api/cards")
                         .header("Authorization", userToken)
                         .param("page", "0")
@@ -158,12 +169,15 @@ public class CardControllerTest {
     }
 
     /**
-     * Тестирует доступ к эндпоинту получения карт без авторизации.
-     * <p>
-     * Ожидается ответ 403 Forbidden, так как JWT-токен отсутствует.
-     * </p>
+     * Проверяет, что доступ к списку карт запрещён
+     * при отсутствии заголовка Authorization.
      *
-     * @throws Exception если происходит ошибка при выполнении HTTP-запроса
+     * Ожидания:
+     * <ul>
+     *     <li>HTTP 403 Forbidden</li>
+     * </ul>
+     *
+     * @throws Exception если MockMvc вызывает ошибку
      */
     @Test
     void testGetCards_Unauthorized() throws Exception {

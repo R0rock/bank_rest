@@ -151,4 +151,4 @@ databaseChangeLog:
                   type: TIMESTAMP
               - column:
                   name: updated_at
-                  type: TIMESTAMP TIMESTAMP
+                  type: TIMESTAMP
